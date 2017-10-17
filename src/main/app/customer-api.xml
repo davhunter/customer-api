@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:context="http://www.springframework.org/schema/context" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+    <http:listener-config name="customer-api-httpListenerConfig" host="0.0.0.0" port="${http.port}" doc:name="HTTP Listener Configuration"/>
+    <apikit:config name="customer-api-config" raml="customer-api.raml" consoleEnabled="false" doc:name="Router"/>
+    <spring:beans>
+        <spring:import resource="classpath:deloitte_mulesoft_error_helper.xml"/>
+    </spring:beans>
+    <context:property-placeholder location="customerapi-${mule.env}.properties"/>
+    <flow name="customer-api-main">
+        <http:listener config-ref="customer-api-httpListenerConfig" path="/customer-api/*" doc:name="HTTP"/>
+        <apikit:router config-ref="customer-api-config" doc:name="APIkit Router"/>
+        <exception-strategy ref="deloitte_globalExceptionStrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="customer-api-console">
+        <http:listener config-ref="customer-api-httpListenerConfig" path="/console/*" doc:name="HTTP"/>
+        <apikit:console config-ref="customer-api-config" doc:name="APIkit Console"/>
+    </flow>
+    <flow name="get:/customers/{ID}:customer-api-config">
+        <validation:is-false message="Customer Not Found" exceptionClass="com.deloitte.customerapi.exceptions.CustomerNotFoundException" expression="#[message.inboundProperties.'http.query.params'.forceError]" doc:name="Validation"/>
+        <set-payload value="{&quot;firstName&quot;: &quot;Alfred&quot;, &quot;lastName&quot;: &quot;Neuman&quot;}" doc:name="Set Payload"/>
+    </flow>
+</mule>
